@@ -12,7 +12,8 @@ az deployment sub validate --location australiaeast --template-file main.bicep -
 az deployment sub what-if --location australiaeast --template-file main.bicep --parameters parameters/env.bicepparam
 
 # Deploy
-az deployment sub create --location australiaeast --template-file main.bicep --parameters parameters/env.bicepparam --query properties.outputs
+az deployment sub create --location australiaeast --template-file main.bicep --parameters parameters/env.bicepparam \
+  --query "[{Name:'resourceGroupName',Value:properties.outputs.resourceGroupName.value},{Name:'grafanaEndpoint',Value:properties.outputs.grafanaEndpoint.value},{Name:'aksPortalUrl',Value:properties.outputs.aksPortalUrl.value}]" -o table
 ```
 
 ## Parameters
