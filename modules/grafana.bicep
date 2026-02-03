@@ -1,11 +1,9 @@
-param name string
-param location string
 param azureMonitorWorkspaceId string
-param ownerObjectId string = ''
+param ownerObjectId string
 
 resource grafana 'Microsoft.Dashboard/grafana@2023-09-01' = {
-  name: name
-  location: location
+  name: '${resourceGroup().name}-grafana'
+  location: resourceGroup().location
   sku: {
     name: 'Standard'
   }
@@ -23,8 +21,7 @@ resource grafana 'Microsoft.Dashboard/grafana@2023-09-01' = {
   }
 }
 
-// Grafana Admin role assignment for user
-resource grafanaAdminRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (!empty(ownerObjectId)) {
+resource grafanaAdminRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
   name: guid(grafana.id, ownerObjectId, 'grafana-admin')
   scope: grafana
   properties: {
@@ -37,7 +34,5 @@ resource grafanaAdminRole 'Microsoft.Authorization/roleAssignments@2022-04-01' =
   }
 }
 
-output id string = grafana.id
-output name string = grafana.name
 output principalId string = grafana.identity.principalId
 output endpoint string = grafana.properties.endpoint

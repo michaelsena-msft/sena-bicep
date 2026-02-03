@@ -9,4 +9,3 @@ resource rg 'Microsoft.Resources/resourceGroups@2024-03-01' = {
 }
 
 output name string = rg.name
-output id string = rg.id
