@@ -46,6 +46,15 @@ module aks 'modules/aksCluster.bicep' = {
   dependsOn: [rg]
 }
 
+module prometheusCollection 'modules/prometheusCollection.bicep' = {
+  name: 'deploy-prometheus-collection'
+  scope: resourceGroup(rgName)
+  params: {
+    aksId: aks.outputs.id
+    amwId: amw.outputs.id
+  }
+}
+
 output resourceGroupName string = rg.outputs.name
 output grafanaEndpoint string = grafana.outputs.endpoint
 output aksPortalUrl string = 'https://portal.azure.com/#resource${aks.outputs.id}'
