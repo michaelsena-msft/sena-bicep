@@ -4,10 +4,10 @@
       "enabled": true,
       "rules": {
         "no-unused-params": {
-          "level": "warning"
+          "level": "error"
         },
         "no-unused-vars": {
-          "level": "warning"
+          "level": "error"
         }
       }
     }
