@@ -12,7 +12,7 @@ az deployment sub validate --location australiaeast --template-file main.bicep -
 az deployment sub what-if --location australiaeast --template-file main.bicep --parameters parameters/env.bicepparam
 
 # Deploy
-az deployment sub create --location australiaeast --template-file main.bicep --parameters parameters/env.bicepparam
+az deployment sub create --location australiaeast --template-file main.bicep --parameters parameters/env.bicepparam --query properties.outputs
 ```
 
 ## Parameters
