@@ -3,8 +3,8 @@ targetScope = 'subscription'
 @description('Workload name used in resource naming (e.g., myproject)')
 param workloadName string = 'myproject'
 
-@description('Object ID of user to grant Grafana Admin role')
-param grafanaAdminObjectId string = ''
+@description('Object ID of the owner/deployer in Entra ID (used for role assignments)')
+param ownerObjectId string = ''
 
 var location = 'australiaeast'
 var workload = workloadName
@@ -41,7 +41,7 @@ module grafana 'modules/grafana.bicep' = {
     name: grafanaName
     location: location
     azureMonitorWorkspaceId: amw.outputs.id
-    grafanaAdminObjectId: grafanaAdminObjectId
+    ownerObjectId: ownerObjectId
   }
 }
 
