@@ -1,70 +1,49 @@
 # AKS with Managed Prometheus, Grafana & Istio
 
-Bicep deployment for a production-ready AKS cluster in Australia East.
+Bicep deployment for a production-ready AKS cluster in Australia East with FIPS compliance, Managed Prometheus, Grafana, and Istio service mesh.
 
-## Resources Deployed
+## Resources
 
-| Resource | Name Pattern | Location |
-|----------|--------------|----------|
-| Resource Group | `rg-{workload}-env-aue` | Australia East |
-| AKS Cluster | `aks-{workload}-env-aue` | Australia East |
-| Azure Monitor Workspace | `amw-{workload}-env-aue` | Australia East |
-| Managed Grafana | `grafana-{workload}-env-aue` | Australia East |
+| Resource | Name Pattern |
+|----------|--------------|
+| Resource Group | `rg-{workload}-env-aue` |
+| AKS Cluster | `aks-{workload}-env-aue` |
+| Azure Monitor Workspace | `amw-{workload}-env-aue` |
+| Managed Grafana | `grafana-{workload}-env-aue` |
 
-## Features
+## Usage
 
-- **FIPS Compliance**: Node pools use FIPS 140-2 validated cryptographic modules
-- **Managed Prometheus**: Platform health metrics enabled
-- **Managed Grafana**: Linked to Azure Monitor Workspace
-- **Managed Istio**: Service mesh with external ingress gateway
+```bash
+# Validate
+az deployment sub validate --location australiaeast --template-file main.bicep --parameters parameters/env.bicepparam
 
-## Prerequisites
+# Preview changes
+az deployment sub what-if --location australiaeast --template-file main.bicep --parameters parameters/env.bicepparam
 
-- Azure CLI with Bicep extension
-- Azure subscription with appropriate permissions
+# Deploy (outputs shown after completion)
+az deployment sub create --location australiaeast --template-file main.bicep --parameters parameters/env.bicepparam --query properties.outputs
+
+# View outputs from previous deployment
+az deployment sub show --name main --query properties.outputs
+```
 
 ## Parameters
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `workloadName` | string | `myproject` | Workload name used in resource naming |
-| `ownerObjectId` | string | `''` | Object ID of the owner/deployer in Entra ID (used for role assignments) |
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `workloadName` | `myproject` | Workload name used in resource naming |
+| `ownerObjectId` | `''` | Entra ID object ID for Grafana admin role |
 
-## Deploy
-
-```bash
-# Deploy with parameters
-az deployment sub create \
-  --location australiaeast \
-  --template-file main.bicep \
-  --parameters parameters/env.bicepparam
-```
-
-Or deploy without role assignments:
-
-```bash
-az deployment sub create \
-  --location australiaeast \
-  --template-file main.bicep
-```
-
-## Validate (without deploying)
-
-```bash
-az deployment sub what-if \
-  --location australiaeast \
-  --template-file main.bicep
-```
-
-## Project Structure
+## Structure
 
 ```
-├── main.bicep                    # Subscription-level entry point
-├── bicepconfig.json              # Bicep linting configuration
+├── main.bicep              # Subscription-level entry point
+├── bicepconfig.json        # Linting config
+├── parameters/             # Environment-specific params
 └── modules/
-    ├── resourceGroup.bicep            # Resource group
-    ├── aksCluster.bicep               # AKS cluster (Istio, FIPS, Prometheus)
-    ├── monitorWorkspace.bicep         # Azure Monitor workspace
-    ├── grafana.bicep                  # Managed Grafana
-    └── grafanaAmwRoleAssignment.bicep # Grafana to AMW role assignment
+    ├── resourceGroup.bicep
+    ├── aksCluster.bicep
+    ├── monitorWorkspace.bicep
+    ├── grafana.bicep
+    └── grafanaAmwRoleAssignment.bicep
 ```
