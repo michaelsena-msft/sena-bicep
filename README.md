@@ -23,6 +23,13 @@ Bicep deployment for a production-ready AKS cluster in Australia East.
 - Azure CLI with Bicep extension
 - Azure subscription with appropriate permissions
 
+## Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `workloadName` | string | `myproject` | Workload name used in resource naming |
+| `ownerObjectId` | string | `''` | Object ID of the owner/deployer in Entra ID (used for role assignments) |
+
 ## Deploy
 
 ```bash
@@ -55,8 +62,9 @@ az deployment sub what-if \
 ├── main.bicep                    # Subscription-level entry point
 ├── bicepconfig.json              # Bicep linting configuration
 └── modules/
-    ├── resourceGroup.bicep       # Resource group
-    ├── aksCluster.bicep          # AKS cluster (Istio, FIPS, Prometheus)
-    ├── monitorWorkspace.bicep    # Azure Monitor workspace
-    └── grafana.bicep             # Managed Grafana
+    ├── resourceGroup.bicep            # Resource group
+    ├── aksCluster.bicep               # AKS cluster (Istio, FIPS, Prometheus)
+    ├── monitorWorkspace.bicep         # Azure Monitor workspace
+    ├── grafana.bicep                  # Managed Grafana
+    └── grafanaAmwRoleAssignment.bicep # Grafana to AMW role assignment
 ```
