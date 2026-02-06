@@ -48,4 +48,4 @@ module adx 'modules/adxCluster.bicep' = {
 
 output aksClusterName string = 'aks-${workloadName}'
 output adxClusterUri string = adx.outputs.clusterUri
-output adxWebExplorerUrl string = 'https://dataexplorer.azure.com/clusters/${adx.outputs.clusterUri}/databases/Metrics'
+output adxWebExplorerUrl string = 'https://dataexplorer.azure.com/clusters/${replace(adx.outputs.clusterUri, 'https://', '')}/databases/Metrics'

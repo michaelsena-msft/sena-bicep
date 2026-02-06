@@ -1,0 +1,446 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2018-05-01/subscriptionDeploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.40.2.10011",
+      "templateHash": "1078534715607908762"
+    }
+  },
+  "parameters": {
+    "workloadName": {
+      "type": "string"
+    },
+    "location": {
+      "type": "string"
+    }
+  },
+  "variables": {
+    "rgName": "[format('rg-{0}', parameters('workloadName'))]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "deploy-rg",
+      "location": "[deployment().location]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "name": {
+            "value": "[variables('rgName')]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2018-05-01/subscriptionDeploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.40.2.10011",
+              "templateHash": "4354977821318976184"
+            }
+          },
+          "parameters": {
+            "name": {
+              "type": "string"
+            },
+            "location": {
+              "type": "string"
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Resources/resourceGroups",
+              "apiVersion": "2024-03-01",
+              "name": "[parameters('name')]",
+              "location": "[parameters('location')]"
+            }
+          ],
+          "outputs": {
+            "name": {
+              "type": "string",
+              "value": "[parameters('name')]"
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "deploy-amw",
+      "resourceGroup": "[variables('rgName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {},
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.40.2.10011",
+              "templateHash": "14487280649017364019"
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Monitor/accounts",
+              "apiVersion": "2023-04-03",
+              "name": "[format('{0}-amw', resourceGroup().name)]",
+              "location": "[resourceGroup().location]"
+            }
+          ],
+          "outputs": {
+            "id": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Monitor/accounts', format('{0}-amw', resourceGroup().name))]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[subscriptionResourceId('Microsoft.Resources/deployments', 'deploy-rg')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "deploy-aks",
+      "resourceGroup": "[variables('rgName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {},
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.40.2.10011",
+              "templateHash": "12097940557974103951"
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.ContainerService/managedClusters",
+              "apiVersion": "2024-09-01",
+              "name": "[format('{0}-aks', resourceGroup().name)]",
+              "location": "[resourceGroup().location]",
+              "identity": {
+                "type": "SystemAssigned"
+              },
+              "properties": {
+                "dnsPrefix": "[format('{0}-aks', resourceGroup().name)]",
+                "agentPoolProfiles": [
+                  {
+                    "name": "system",
+                    "count": 2,
+                    "vmSize": "Standard_D4s_v3",
+                    "mode": "System",
+                    "enableFIPS": true
+                  }
+                ],
+                "azureMonitorProfile": {
+                  "metrics": {
+                    "enabled": true
+                  }
+                },
+                "serviceMeshProfile": {
+                  "mode": "Istio",
+                  "istio": {
+                    "components": {
+                      "ingressGateways": [
+                        {
+                          "enabled": true,
+                          "mode": "External"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          ],
+          "outputs": {
+            "id": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.ContainerService/managedClusters', format('{0}-aks', resourceGroup().name))]"
+            },
+            "kubeletIdentityObjectId": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.ContainerService/managedClusters', format('{0}-aks', resourceGroup().name)), '2024-09-01').identityProfile.kubeletidentity.objectId]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[subscriptionResourceId('Microsoft.Resources/deployments', 'deploy-rg')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "deploy-prometheus-collection",
+      "resourceGroup": "[variables('rgName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "aksId": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('rgName')), 'Microsoft.Resources/deployments', 'deploy-aks'), '2025-04-01').outputs.id.value]"
+          },
+          "amwId": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('rgName')), 'Microsoft.Resources/deployments', 'deploy-amw'), '2025-04-01').outputs.id.value]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.40.2.10011",
+              "templateHash": "13988370900054679969"
+            }
+          },
+          "parameters": {
+            "aksId": {
+              "type": "string"
+            },
+            "amwId": {
+              "type": "string"
+            }
+          },
+          "variables": {
+            "aksName": "[last(split(parameters('aksId'), '/'))]"
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Insights/dataCollectionRules",
+              "apiVersion": "2022-06-01",
+              "name": "[format('{0}-dcr', resourceGroup().name)]",
+              "location": "[resourceGroup().location]",
+              "kind": "Linux",
+              "properties": {
+                "dataSources": {
+                  "prometheusForwarder": [
+                    {
+                      "name": "PrometheusDataSource",
+                      "streams": [
+                        "Microsoft-PrometheusMetrics"
+                      ]
+                    }
+                  ]
+                },
+                "destinations": {
+                  "monitoringAccounts": [
+                    {
+                      "accountResourceId": "[parameters('amwId')]",
+                      "name": "MonitoringAccount"
+                    }
+                  ]
+                },
+                "dataFlows": [
+                  {
+                    "destinations": [
+                      "MonitoringAccount"
+                    ],
+                    "streams": [
+                      "Microsoft-PrometheusMetrics"
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "type": "Microsoft.Insights/dataCollectionRuleAssociations",
+              "apiVersion": "2022-06-01",
+              "scope": "[resourceId('Microsoft.ContainerService/managedClusters', variables('aksName'))]",
+              "name": "[format('{0}-dcra', resourceGroup().name)]",
+              "properties": {
+                "dataCollectionRuleId": "[resourceId('Microsoft.Insights/dataCollectionRules', format('{0}-dcr', resourceGroup().name))]"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Insights/dataCollectionRules', format('{0}-dcr', resourceGroup().name))]"
+              ]
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('rgName')), 'Microsoft.Resources/deployments', 'deploy-aks')]",
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('rgName')), 'Microsoft.Resources/deployments', 'deploy-amw')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "deploy-adx",
+      "resourceGroup": "[variables('rgName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "workloadName": {
+            "value": "[parameters('workloadName')]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "kubeletIdentityObjectId": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('rgName')), 'Microsoft.Resources/deployments', 'deploy-aks'), '2025-04-01').outputs.kubeletIdentityObjectId.value]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.40.2.10011",
+              "templateHash": "2480560248228503527"
+            }
+          },
+          "parameters": {
+            "workloadName": {
+              "type": "string"
+            },
+            "location": {
+              "type": "string"
+            },
+            "kubeletIdentityObjectId": {
+              "type": "string"
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Kusto/clusters",
+              "apiVersion": "2024-04-13",
+              "name": "[format('adx{0}', parameters('workloadName'))]",
+              "location": "[parameters('location')]",
+              "sku": {
+                "name": "Standard_E2ads_v5",
+                "tier": "Standard",
+                "capacity": 2
+              },
+              "identity": {
+                "type": "SystemAssigned"
+              },
+              "properties": {
+                "enableStreamingIngest": true,
+                "optimizedAutoscale": {
+                  "isEnabled": true,
+                  "version": 1,
+                  "minimum": 2,
+                  "maximum": 4
+                }
+              }
+            },
+            {
+              "type": "Microsoft.Kusto/clusters/databases",
+              "apiVersion": "2024-04-13",
+              "name": "[format('{0}/{1}', format('adx{0}', parameters('workloadName')), 'Metrics')]",
+              "location": "[parameters('location')]",
+              "kind": "ReadWrite",
+              "properties": {
+                "hotCachePeriod": "P31D",
+                "softDeletePeriod": "P365D"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Kusto/clusters', format('adx{0}', parameters('workloadName')))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Kusto/clusters/databases",
+              "apiVersion": "2024-04-13",
+              "name": "[format('{0}/{1}', format('adx{0}', parameters('workloadName')), 'Logs')]",
+              "location": "[parameters('location')]",
+              "kind": "ReadWrite",
+              "properties": {
+                "hotCachePeriod": "P31D",
+                "softDeletePeriod": "P365D"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Kusto/clusters', format('adx{0}', parameters('workloadName')))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Kusto/clusters/databases/principalAssignments",
+              "apiVersion": "2024-04-13",
+              "name": "[format('{0}/{1}/{2}', format('adx{0}', parameters('workloadName')), 'Metrics', 'metrics-kubelet-admin')]",
+              "properties": {
+                "principalId": "[parameters('kubeletIdentityObjectId')]",
+                "role": "Admin",
+                "principalType": "App",
+                "tenantId": "[subscription().tenantId]"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Kusto/clusters/databases', format('adx{0}', parameters('workloadName')), 'Metrics')]"
+              ]
+            },
+            {
+              "type": "Microsoft.Kusto/clusters/databases/principalAssignments",
+              "apiVersion": "2024-04-13",
+              "name": "[format('{0}/{1}/{2}', format('adx{0}', parameters('workloadName')), 'Logs', 'logs-kubelet-admin')]",
+              "properties": {
+                "principalId": "[parameters('kubeletIdentityObjectId')]",
+                "role": "Admin",
+                "principalType": "App",
+                "tenantId": "[subscription().tenantId]"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Kusto/clusters/databases', format('adx{0}', parameters('workloadName')), 'Logs')]"
+              ]
+            }
+          ],
+          "outputs": {
+            "clusterUri": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Kusto/clusters', format('adx{0}', parameters('workloadName'))), '2024-04-13').uri]"
+            },
+            "clusterName": {
+              "type": "string",
+              "value": "[format('adx{0}', parameters('workloadName'))]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('rgName')), 'Microsoft.Resources/deployments', 'deploy-aks')]"
+      ]
+    }
+  ],
+  "outputs": {
+    "aksClusterName": {
+      "type": "string",
+      "value": "[format('aks-{0}', parameters('workloadName'))]"
+    },
+    "adxClusterUri": {
+      "type": "string",
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('rgName')), 'Microsoft.Resources/deployments', 'deploy-adx'), '2025-04-01').outputs.clusterUri.value]"
+    },
+    "adxWebExplorerUrl": {
+      "type": "string",
+      "value": "[format('https://dataexplorer.azure.com/clusters/{0}/databases/Metrics', replace(reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, variables('rgName')), 'Microsoft.Resources/deployments', 'deploy-adx'), '2025-04-01').outputs.clusterUri.value, 'https://', ''))]"
+    }
+  }
+}
