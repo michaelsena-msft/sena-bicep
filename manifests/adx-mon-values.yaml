@@ -1,0 +1,28 @@
+# ADX-Mon Configuration Reference for sena-bicep
+#
+# Install ADX-Mon:
+#   ADX_URI=$(az deployment sub show --name sena --query properties.outputs.adxClusterUri.value -o tsv)
+#   bash <(curl -s https://raw.githubusercontent.com/Azure/adx-mon/main/build/k8s/bundle.sh)
+#
+# The setup script will prompt for:
+#   - ADX Cluster URI: (use $ADX_URI from above)
+#   - Metrics Database: Metrics
+#   - Logs Database: Logs
+#   - Region: australiaeast
+#
+# After install, verify:
+#   kubectl get pods -n adx-mon
+#
+# To scrape app metrics, annotate pods:
+#   adx-mon/scrape: "true"
+#   adx-mon/log-destination: "Logs:<table-name>"
+#
+# Docs: https://github.com/Azure/adx-mon
+
+# ADX-Mon collector TOML config reference (applied via ConfigMap post-install):
+adx-mon:
+  endpoint: "<ADX_URI>"  # Replace with output from: az deployment sub show --name sena --query properties.outputs.adxClusterUri.value -o tsv
+  region: "australiaeast"
+  databases:
+    metrics: "Metrics"
+    logs: "Logs"

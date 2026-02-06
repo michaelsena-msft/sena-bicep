@@ -2,7 +2,6 @@ targetScope = 'subscription'
 
 param workloadName string
 param location string
-param ownerObjectId string
 
 var rgName = 'rg-${workloadName}'
 
@@ -21,24 +20,6 @@ module amw 'modules/monitorWorkspace.bicep' = {
   dependsOn: [rg]
 }
 
-module grafana 'modules/grafana.bicep' = {
-  name: 'deploy-grafana'
-  scope: resourceGroup(rgName)
-  params: {
-    azureMonitorWorkspaceId: amw.outputs.id
-    ownerObjectId: ownerObjectId
-  }
-}
-
-module grafanaAmwRole 'modules/grafanaAmwRoleAssignment.bicep' = {
-  name: 'deploy-grafana-amw-role'
-  scope: resourceGroup(rgName)
-  params: {
-    azureMonitorWorkspaceId: amw.outputs.id
-    grafanaPrincipalId: grafana.outputs.principalId
-  }
-}
-
 module aks 'modules/aksCluster.bicep' = {
   name: 'deploy-aks'
   scope: resourceGroup(rgName)
@@ -55,6 +36,16 @@ module prometheusCollection 'modules/prometheusCollection.bicep' = {
   }
 }
 
-output resourceGroupName string = rg.outputs.name
-output grafanaEndpoint string = grafana.outputs.endpoint
-output aksPortalUrl string = 'https://portal.azure.com/#resource${aks.outputs.id}'
+module adx 'modules/adxCluster.bicep' = {
+  name: 'deploy-adx'
+  scope: resourceGroup(rgName)
+  params: {
+    workloadName: workloadName
+    location: location
+    kubeletIdentityObjectId: aks.outputs.kubeletIdentityObjectId
+  }
+}
+
+output aksClusterName string = 'aks-${workloadName}'
+output adxClusterUri string = adx.outputs.clusterUri
+output adxWebExplorerUrl string = 'https://dataexplorer.azure.com/clusters/${adx.outputs.clusterUri}/databases/Metrics'
